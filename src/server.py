@@ -1,8 +1,16 @@
-import tornado.web, tornado.ioloop, tornado.websocket  
-from picamera import PiCamera, PiVideoFrameType, Color
-from string import Template
-import io, os, socket
+import tornado.ioloop
+import tornado.web
+import tornado.websocket
+from picamera import PiCamera
+from picamera import PiVideoFrameType
+from picamera import Color
+
+import io
+import os
+import socket
 from datetime import timedelta
+from string import Template
+
 
 # start configuration
 serverPort = 8000
