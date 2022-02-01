@@ -1,7 +1,8 @@
 import tornado.web, tornado.ioloop, tornado.websocket  
-from picamera import PiCamera, PiVideoFrameType
+from picamera import PiCamera, PiVideoFrameType, Color
 from string import Template
 import io, os, socket
+from datetime import timedelta
 
 # start configuration
 serverPort = 8000
@@ -141,6 +142,27 @@ requestHandlers = [
     (r"/jmuxer.min.js", jmuxerHandler)
 ]
 
+def update_mem():
+    with open("/proc/self/statm") as f:
+        statm = f.read()
+    with open("/proc/meminfo") as f:
+        meminfo_data = f.read()
+    vmrss = int(statm.strip().split()[1])
+    meminfo = {}
+    for line in meminfo_data.strip().split("\n"):
+        tup = line.split()
+        meminfo[tup[0][:-1]] = int(tup[1])
+    viewers = len(wsHandler.connections)
+    line = 'Viewers: {} | Me: {:.1f}M | Sys: {:.1f}M / {:.1f}M'.format(
+        viewers,
+        vmrss / 1024.,
+        meminfo["MemAvailable"] / 1024.,
+        meminfo["MemTotal"] / 1024.,
+    )
+    camera.annotate_text = line
+    loop.add_timeout(timedelta(seconds=1), update_mem)
+
+
 try:
     streamBuffer = StreamBuffer(camera)
     camera.start_recording(streamBuffer, **recordingOptions) 
@@ -148,6 +170,8 @@ try:
     application.listen(serverPort)
     loop = tornado.ioloop.IOLoop.current()
     streamBuffer.setLoop(loop)
+    camera.annotate_background=Color("black")
+    loop.add_timeout(timedelta(seconds=1), update_mem)
     loop.start()
 except KeyboardInterrupt:
     camera.stop_recording()
