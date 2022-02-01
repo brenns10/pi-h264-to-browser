@@ -8,6 +8,7 @@ from picamera import Color
 import io
 import os
 import socket
+import sys
 from datetime import timedelta
 from string import Template
 
@@ -171,6 +172,17 @@ def update_mem():
     loop.add_timeout(timedelta(seconds=1), update_mem)
 
 
+def debug_prompt():
+    print("Pi Stream Debug. Enter Python expression followed by Ctrl-D to execute.")
+
+
+def debug_lol(stdin_, _):
+    print("DEBUGGER: ", end="")
+    line = stdin_.read()
+    print(line)
+    print(exec(line))
+    debug_prompt()
+
 try:
     streamBuffer = StreamBuffer(camera)
     camera.start_recording(streamBuffer, **recordingOptions) 
@@ -184,6 +196,8 @@ try:
     streamBuffer.setLoop(loop)
     camera.annotate_background=Color("black")
     loop.add_timeout(timedelta(seconds=1), update_mem)
+    loop.add_handler(sys.stdin, debug_lol, tornado.ioloop.IOLoop.READ)
+    debug_prompt()
     loop.start()
 except KeyboardInterrupt:
     camera.stop_recording()
