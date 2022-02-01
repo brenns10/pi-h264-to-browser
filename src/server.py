@@ -6,8 +6,14 @@ import io, os, socket
 # start configuration
 serverPort = 8000
 
-camera = PiCamera(sensor_mode=2, resolution='1920x1080', framerate=30)
+camera = PiCamera(
+    sensor_mode=2,
+    resolution='1920x1080',
+    framerate=30,
+)
 camera.video_denoise = False
+camera.rotation = 180
+#camera.exposure_mode = 'night'
 
 recordingOptions = {
     'format' : 'h264', 
@@ -17,7 +23,7 @@ recordingOptions = {
     'intra_period' : 15, 
     'intra_refresh' : 'both', 
     'inline_headers' : True, 
-    'sps_timing' : True
+    'sps_timing' : True,
 }
 
 focusPeakingColor = '1.0, 0.0, 0.0, 1.0'
