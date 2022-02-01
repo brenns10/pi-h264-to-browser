@@ -6,7 +6,9 @@ from picamera import PiVideoFrameType
 from picamera import Color
 
 import io
+import json
 import os
+import math
 import socket
 import sys
 from datetime import timedelta
@@ -142,9 +144,113 @@ class jmuxerHandler(tornado.web.RequestHandler):
         self.set_header('Content-Type', 'text/javascript')
         self.write(jmuxerJs)
 
+# (sz, incr): size of frame and increment
+# 0-index is the zoom_level zl
+zoom_levels = [(1., 1.), (0.75, 0.25), (0.5, 0.125)]
+
+def get_zoom():
+    # this function is horribly broken, need to do it when it's not 1Am
+    x1, y1, w, h = camera.zoom
+    print(camera.zoom)
+    print("hi")
+    mod = False
+
+    # Find exact zoom level based on current width
+    # sz = size
+    for i, (sz, incr) in enumerate(zoom_levels):
+        maxv = int((1 - sz) // incr)
+        if math.isclose(w, sz):
+            print("w / sz : {}".format(sz))
+            break
+    else:
+        i = 0
+    # Default to zoomed out
+    sz = zoom_levels[i][0]
+    incr = zoom_levels[i][1]
+    w = sz
+    maxv = int((1 - sz) // incr)
+
+    if w != h: # maintain aspect ratio
+        h = w
+        mod = True
+
+    print(incr)
+    print( int(min((x1 + .001) / incr, maxv)), int(min((y1 + .001) // incr, maxv)), i)
+    return int(min((x1 + .001) / incr, maxv)), int(min((y1 + .001) // incr, maxv)), i
+
+
+
+def set_zoom(x, y, zl):
+    sz, incr = zoom_levels[zl]
+    maxv = int((1 - sz) // incr)
+    x = min(int(x), maxv)
+    x = max(x, 0)
+    y = min(int(y), maxv)
+    y = max(y, 0)
+    print(x, y)
+    print(incr)
+    print(x*incr, y*incr, sz, sz)
+    camera.zoom = (x * incr, y * incr, sz, sz)
+
+
+class cameraSettings(tornado.web.RequestHandler):
+    def get(self):
+        self.set_header("Content-Type", "application/json")
+        settings = {
+            "awb_mode": camera.awb_mode,
+            "awb_mode_choices":  list(PiCamera.AWB_MODES.keys()),
+            "brightness": camera.brightness,
+            "brightness_range": [0, 100],
+            "contrast": camera.contrast,
+            "contrast_range": [-100, 100],
+            "exposure_compensation": camera.exposure_compensation,
+            "exposure_compensation_range": [-25, 25],
+            "exposure_mode": camera.exposure_mode,
+            "exposure_mode_choices": list(PiCamera.EXPOSURE_MODES.keys()),
+            "image_effect": camera.image_effect,
+            "image_effect_choices": list(PiCamera.IMAGE_EFFECTS.keys()),
+            "iso": camera.iso,
+            "iso_range": [100, 800],
+            "saturation": camera.saturation,
+            "saturation_range": [-100, 100],
+            "sharpness": camera.sharpness,
+            "sharpness_range": [-100, 100],
+            "zoom_level": get_zoom(),
+        }
+        self.write(json.dumps(settings).encode("utf-8"))
+
+    def post(self):
+        body = json.loads(self.request.body.decode("utf-8"))
+        if "awb_mode" in body and body["awb_mode"] in PiCamera.AWB_MODES:
+            camera.awb_mode = body["awb_mode"]
+        if "brightness" in body and 0 <= body["brightness"] <= 100:
+            camera.brightness = body["brightness"]
+        if "contrast" in body and -100 <= body["contrast"] <= 100:
+            camera.contrast = body["contrast"]
+        if "exposure_compensation" in body and -25 <= body["exposure_compensation"] <= 25:
+            camera.exposure_compensation = body["exposure_compensation"]
+        if "exposure_mode" in body and body["exposure_mode"] in PiCamera.EXPOSURE_MODES:
+            camera.exposure_mode = body["exposure_mode"]
+        if "image_effect" in body and body["image_effect"] in PiCamera.IMAGE_EFFECTS:
+            camera.image_effect = body["image_effect"]
+        if "iso" in body and 0 <= body["iso"] <= 1600:
+            camera.iso = body["iso"]
+        if "saturation" in body and -100 <= body["saturation"]:
+            camera.saturation = body["saturation"]
+        if "sharpness" in body and -100 <= body["sharpness"]:
+            camera.sharpness = body["sharpness"]
+        if "zoom_level" in body:
+            val = body["zoom_level"]
+            print(val)
+            if isinstance(val, list) and len(val) == 3:
+                set_zoom(*val)
+        self.get()
+
+
 requestHandlers = [
     (r"/ws/", wsHandler),
     (r"/", indexHandler),
+    (r"/cam/", cameraSettings),
     (r"/center/", centerHandler),
     (r"/grid/", gridHandler),
     (r"/focus/", focusHandler),
