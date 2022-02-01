@@ -146,51 +146,32 @@ class jmuxerHandler(tornado.web.RequestHandler):
 
 # (sz, incr): size of frame and increment
 # 0-index is the zoom_level zl
-zoom_levels = [(1., 1.), (0.75, 0.25), (0.5, 0.125)]
+zoom_levels = [
+    (1.0, 1.0),
+    (0.8, 0.1),
+    (0.6, 0.1),
+    (0.4, 0.1),
+    (0.2, 0.1),
+]
+
+# (index into array, x position, y position)
+current_zoom = 0, 0, 0
+
 
 def get_zoom():
-    # this function is horribly broken, need to do it when it's not 1Am
-    x1, y1, w, h = camera.zoom
-    print(camera.zoom)
-    print("hi")
-    mod = False
-
-    # Find exact zoom level based on current width
-    # sz = size
-    for i, (sz, incr) in enumerate(zoom_levels):
-        maxv = int((1 - sz) // incr)
-        if math.isclose(w, sz):
-            print("w / sz : {}".format(sz))
-            break
-    else:
-        i = 0
-    # Default to zoomed out
-    sz = zoom_levels[i][0]
-    incr = zoom_levels[i][1]
-    w = sz
-    maxv = int((1 - sz) // incr)
-
-    if w != h: # maintain aspect ratio
-        h = w
-        mod = True
-
-    print(incr)
-    print( int(min((x1 + .001) / incr, maxv)), int(min((y1 + .001) // incr, maxv)), i)
-    return int(min((x1 + .001) / incr, maxv)), int(min((y1 + .001) // incr, maxv)), i
+    return current_zoom
 
 
-
-def set_zoom(x, y, zl):
+def set_zoom(zl, x, y):
+    global current_zoom
     sz, incr = zoom_levels[zl]
     maxv = int((1 - sz) // incr)
     x = min(int(x), maxv)
     x = max(x, 0)
     y = min(int(y), maxv)
     y = max(y, 0)
-    print(x, y)
-    print(incr)
-    print(x*incr, y*incr, sz, sz)
     camera.zoom = (x * incr, y * incr, sz, sz)
+    current_zoom = zl, x, y
 
 
 class cameraSettings(tornado.web.RequestHandler):
@@ -241,7 +222,6 @@ class cameraSettings(tornado.web.RequestHandler):
             camera.sharpness = body["sharpness"]
         if "zoom_level" in body:
             val = body["zoom_level"]
-            print(val)
             if isinstance(val, list) and len(val) == 3:
                 set_zoom(*val)
         self.get()
@@ -292,6 +272,7 @@ def debug_lol(stdin_, _):
 try:
     streamBuffer = StreamBuffer(camera)
     camera.start_recording(streamBuffer, **recordingOptions) 
+    camera.zoom = 0, 0, 1, 1
     application = tornado.web.Application(
         requestHandlers,
         websocket_ping_interval=5,
