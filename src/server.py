@@ -166,7 +166,11 @@ def update_mem():
 try:
     streamBuffer = StreamBuffer(camera)
     camera.start_recording(streamBuffer, **recordingOptions) 
-    application = tornado.web.Application(requestHandlers)
+    application = tornado.web.Application(
+        requestHandlers,
+        websocket_ping_interval=5,
+        websocket_ping_timeout=10,
+    )
     application.listen(serverPort)
     loop = tornado.ioloop.IOLoop.current()
     streamBuffer.setLoop(loop)
