@@ -53,11 +53,11 @@ top: 0; left: 0; bottom: 0; right: 0;
 			node: 'stream',
 			mode: 'video',
 			flushingTime: 0,
-			fps: $fps,
+			fps: REPLACE_FPS,
 			debug: false
 		 });
 
-		var ws = new WebSocket("ws://$ip:$port/ws/");
+		var ws = new WebSocket("ws://REPLACE_IP:REPLACE_PORT/ws/");
 		ws.binaryType = 'arraybuffer';
 		ws.addEventListener('message',function(event){
 			if (!document.hidden){

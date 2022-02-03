@@ -62,11 +62,15 @@ def getFile(filePath):
     file.close()
     return content
 
-def templatize(content, replacements):
-    tmpl = Template(content)
-    return tmpl.substitute(replacements)
+def templatize(content, replacements, literal=False):
+    if not literal:
+        tmpl = Template(content)
+        return tmpl.substitute(replacements)
+    for key, value in replacements.items():
+        content = content.replace(key, str(value))
+    return content
 
-indexHtml = templatize(getFile('index.html'), {'ip':serverIp, 'port':serverPort, 'fps':camera.framerate})
+indexHtml = templatize(getFile('index.html'), {'REPLACE_IP':serverIp, 'REPLACE_PORT':serverPort, 'REPLACE_FPS':camera.framerate}, True)
 centerHtml = templatize(getFile('center.html'), {'ip':serverIp, 'port':serverPort, 'fps':camera.framerate,'color':centerColor, 'thickness':centerThickness})
 gridHtml = templatize(getFile('grid.html'), {'ip':serverIp, 'port':serverPort, 'fps':camera.framerate,'color':gridColor, 'thickness':gridThickness})
 focusHtml = templatize(getFile('focus.html'), {'ip':serverIp, 'port':serverPort, 'fps':camera.framerate, 'color':focusPeakingColor, 'threshold':focusPeakingthreshold})
