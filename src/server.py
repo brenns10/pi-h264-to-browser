@@ -206,26 +206,30 @@ class cameraSettings(tornado.web.RequestHandler):
         }
         self.write(json.dumps(settings).encode("utf-8"))
 
+    def _set(self, body, field, min_=None, max_=None, opts=[]):
+        new = body.get(field)
+        old = getattr(camera, field)
+        if (new is None) or (new == old) or \
+           (min_ and new < min_) or (max_ and new > max_) or \
+           (opts and new not in opts):
+            return
+        print("CAMERA: {}: {} -> {}".format(field, old, new))
+        setattr(camera, field, new)
+        res = getattr(camera, field)
+        if res != new:
+            print(" (rejected, now {})".format(res))
+
     def post(self):
         body = json.loads(self.request.body.decode("utf-8"))
-        if "awb_mode" in body and body["awb_mode"] in PiCamera.AWB_MODES:
-            camera.awb_mode = body["awb_mode"]
-        if "brightness" in body and 0 <= body["brightness"] <= 100:
-            camera.brightness = body["brightness"]
-        if "contrast" in body and -100 <= body["contrast"] <= 100:
-            camera.contrast = body["contrast"]
-        if "exposure_compensation" in body and -25 <= body["exposure_compensation"] <= 25:
-            camera.exposure_compensation = body["exposure_compensation"]
-        if "exposure_mode" in body and body["exposure_mode"] in PiCamera.EXPOSURE_MODES:
-            camera.exposure_mode = body["exposure_mode"]
-        if "image_effect" in body and body["image_effect"] in PiCamera.IMAGE_EFFECTS:
-            camera.image_effect = body["image_effect"]
-        if "iso" in body and 0 <= body["iso"] <= 1600:
-            camera.iso = body["iso"]
-        if "saturation" in body and -100 <= body["saturation"]:
-            camera.saturation = body["saturation"]
-        if "sharpness" in body and -100 <= body["sharpness"]:
-            camera.sharpness = body["sharpness"]
+        self._set(body, "awb_mode", opts=PiCamera.AWB_MODES)
+        self._set(body, "brightness", 0, 100)
+        self._set(body, "contrast", -100, 100)
+        self._set(body, "exposure_compensation", -25, 25)
+        self._set(body, "exposure_mode", opts=PiCamera.EXPOSURE_MODES)
+        self._set(body, "image_effect", opts=PiCamera.IMAGE_EFFECTS)
+        self._set(body, "iso", 0, 1600)
+        self._set(body, "saturation", -100, 100)
+        self._set(body, "sharpness", -100, 100)
         if "zoom_level" in body:
             val = body["zoom_level"]
             if isinstance(val, list) and len(val) == 3:
