@@ -168,8 +168,10 @@ def get_zoom():
 
 def set_zoom(zl, x, y):
     global current_zoom
+    zl = min(zl, len(zoom_levels) - 1)
+    zl = max(zl, 0)
     sz, incr = zoom_levels[zl]
-    maxv = int((1 - sz) // incr)
+    maxv = round((1 - sz) / incr)
     x = min(int(x), maxv)
     x = max(x, 0)
     y = min(int(y), maxv)
