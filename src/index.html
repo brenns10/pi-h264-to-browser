@@ -5,6 +5,8 @@
 <meta charset="utf-8">
 <title></title>
 <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/fontawesome.min.css" integrity="sha384-jLKHWM3JRmfMU0A5x5AkjWkw/EYfGUAGagvnfryNV3F9VqM98XiIH7VBGVoxVSc7" crossorigin="anonymous">
 <style>
 body{
 margin:0;
@@ -39,6 +41,36 @@ margin: auto;
 position: absolute;
 top: 0; left: 0; bottom: 0; right: 0;
 }
+
+/* Arrange buttons */
+.btn-matrix {
+   flex-wrap: wrap; /* allow buttons to jump to another row */
+   display: flex;
+   width: 8em;
+}
+.btn-matrix > .btn {
+   width: 33%; /* force buttons to have the same width regardless of content */
+}
+.btn-matrix > .btn:nth-child(3n + 4) {
+   margin-left: 0; /* because .btn-group adds `margin-left: -1px;` to all buttons */
+}
+.btn-matrix > .btn:nth-child(n + 4) {
+   margin-top: -1px; /* superimpose borders of the buttons from adjacent rows */
+}
+
+/* Fix border radius */
+.btn-matrix > .btn:first-child {
+   border-bottom-left-radius: 0;
+}
+.btn-matrix > .btn:nth-child(3) {
+   border-top-right-radius: 4px !important;
+}
+.btn-matrix > .btn:nth-last-child(3) {
+   border-bottom-left-radius: 4px !important;
+}
+.btn-matrix > .btn:last-child {
+   border-top-right-radius: 0;
+}
 </style>
 <script src="/jmuxer.min.js"></script>
 </head>
@@ -47,7 +79,150 @@ top: 0; left: 0; bottom: 0; right: 0;
 		 <video controls autoplay muted id="stream"></video>	
 	</div>
 <body>
+<div class="btn-matrix position-absolute">
+  <button type="button" class="btn btn-default"
+	  aria-label="Video Settings"
+	  data-toggle="modal" data-target="#videoSettings">
+    <i class="fas fa-cogs"></i>
+  </button>
+  <button type="button" class="btn btn-default"
+	  aria-label="Move Up" onclick="zoom_chg(0, -1, 0)">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+  <button type="button" class="btn btn-default"
+	  aria-label="Zoom In" onclick="zoom_chg(0, 0, 1)">
+    <i class="fas fa-search-plus"></i>
+  </button>
+  <button type="button" class="btn btn-default"
+	  aria-label="Move Left" onclick="zoom_chg(-1, 0, 0)">
+    <i class="fas fa-arrow-left"></i>
+  </button>
+  <button type="button" class="btn btn-default invisible" >
+    <i class="fas fa-arrow-left"></i>
+  </button>
+  <button type="button" class="btn btn-default"
+	  aria-label="Move Right" onclick="zoom_chg(1, 0, 0)">
+    <i class="fas fa-arrow-right"></i>
+  </button>
+  <button type="button" class="btn btn-default invisible" >
+    <i class="fas fa-arrow-left"></i>
+  </button>
+  <button type="button" class="btn btn-default"
+	  aria-label="Move Down" onclick="zoom_chg(0, 1, 0)">
+    <i class="fas fa-arrow-down"></i>
+  </button>
+  <button type="button" class="btn btn-default"
+	  aria-label="Zoom Out" onclick="zoom_chg(0, 0, -1)">
+    <i class="fas fa-search-minus"></i>
+  </button>
+</div>
+
+<div class="modal fade" id="videoSettings" tabindex="-1" role="dialog" aria-labelledby="videoSettingsLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="videoSettingsLabel">Video Settings</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="settingsForm">
+          <div class="form-group">
+            <label for="brightness">Brightness (0&mdash;100)</label>
+            <input class="form-control form-control-sm" type="number" id="brightness">
+          </div>
+          <div class="form-group">
+            <label for="contrast">Contrast (-100&mdash;100)</label>
+            <input class="form-control form-control-sm" type="number" id="contrast">
+          </div>
+          <div class="form-group">
+            <label for="exposure_compensation">Exposure Compensation (-25&mdash;25)</label>
+            <input class="form-control form-control-sm" type="number" id="exposure_compensation">
+          </div>
+          <div class="form-group">
+            <label for="iso">ISO (100&mdash;800)</label>
+            <input class="form-control form-control-sm" type="number" id="iso">
+          </div>
+          <div class="form-group">
+            <label for="saturation">Saturation (-100&mdash;100)</label>
+            <input class="form-control form-control-sm" type="number" id="saturation">
+          </div>
+          <div class="form-group">
+            <label for="sharpness">Sharpness (-100&mdash;100)</label>
+            <input class="form-control form-control-sm" type="number" id="sharpness">
+          </div>
+          <div class="form-group">
+            <label for="awb_mode">Auto White Balance Mode</label>
+            <select class="form-control form-control-sm" id="awb_mode">
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="exposure_mode">Exposure Mode</label>
+            <select class="form-control form-control-sm" id="exposure_mode">
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="image_effect">Image Effect</label>
+            <select class="form-control form-control-sm" id="image_effect">
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="settings_submit()">Apply</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
     <script>
+	var zoom = [0, 0, 0];
+        function zoom_chg(x_chg, y_chg, level_chg) {
+            zoom[0] += level_chg;
+            zoom[1] += x_chg;
+            zoom[2] += y_chg;
+            $.post("/cam/", JSON.stringify({"zoom_level": zoom})).then(settings_setup);
+        }
+        function set_options(elem, options, current) {
+            for (let i = elem.length - 1; i >= 0; i--) {
+                elem.remove(i);
+            }
+            for (let i = 0; i < options.length; i++) {
+                const selected = (options[i] === current);
+                elem.add(new Option(options[i], options[i], false, selected));
+            }
+        }
+        function settings_submit() {
+	    let data = {};
+            data["brightness"] = $("#brightness")[0].valueAsNumber;
+            data["contrast"] = $("#contrast")[0].valueAsNumber;
+            data["exposure_compensation"] = $("#exposure_compensation")[0].valueAsNumber;
+            data["iso"] = $("#iso")[0].valueAsNumber;
+            data["saturation"] = $("#saturation")[0].valueAsNumber;
+            data["sharpness"] = $("#sharpness")[0].valueAsNumber;
+            data["awb_mode"] = $("#awb_mode")[0].value;
+            data["exposure_mode"] = $("#exposure_mode")[0].value;
+            data["image_effect"] = $("#image_effect")[0].value;
+            console.log(data)
+            $.post("/cam/", JSON.stringify(data)).then(settings_setup);
+        }
+        function settings_setup(obj) {
+	    data = {};
+            $("#brightness")[0].value = obj.brightness;
+            $("#contrast")[0].value = obj.contrast;
+            $("#exposure_compensation")[0].value = obj.exposure_compensation;
+            $("#iso")[0].value = obj.iso;
+            $("#saturation")[0].value = obj.saturation;
+            $("#sharpness")[0].value = obj.sharpness;
+            set_options($("#awb_mode")[0], obj.awb_mode_choices, obj.awb_mode);
+            set_options($("#exposure_mode")[0], obj.exposure_mode_choices, obj.exposure_mode);
+            set_options($("#image_effect")[0], obj.image_effect_choices, obj.image_effect);
+            zoom = obj.zoom_level;
+        }
 	window.onload = function(){	
 		var jmuxer = new JMuxer({
 			node: 'stream',
@@ -66,6 +241,7 @@ top: 0; left: 0; bottom: 0; right: 0;
 				});				
 			}
 		});
+                $.get("/cam/").then(settings_setup);
 	}     
     </script>
 </body>
