@@ -16,6 +16,9 @@ from string import Template
 
 
 # start configuration
+debug = False
+if os.getenv("DEBUG_CAM"):
+    debug = True
 serverPort = 8000
 
 camera = PiCamera(
@@ -293,7 +296,10 @@ try:
     streamBuffer.setLoop(loop)
     camera.annotate_background=Color("black")
     loop.add_timeout(timedelta(seconds=1), update_mem)
-    loop.add_handler(sys.stdin, debug_lol, tornado.ioloop.IOLoop.READ)
+    # When running under systemd, this gives an error, I assume stdin can't be
+    # read.
+    if debug:
+        loop.add_handler(sys.stdin, debug_lol, tornado.ioloop.IOLoop.READ)
     debug_prompt()
     loop.start()
 except KeyboardInterrupt:
