@@ -1,0 +1,14 @@
+[Unit]
+Description=H.264 Pet Cam Service
+After=network-online.target
+Conflicts=motion.service
+
+[Install]
+WantedBy=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/pi-h264-to-browser
+ExecStart=/home/pi/pi-h264-to-browser/venv/bin/python src/server.py
