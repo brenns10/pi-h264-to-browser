@@ -11,6 +11,7 @@ import os
 import math
 import socket
 import sys
+import time
 from datetime import timedelta
 from string import Template
 
@@ -51,9 +52,21 @@ gridColor = '255, 0, 0, 1.0'
 gridThickness = 2
 # end configuration
 
-s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-s.connect(('8.8.8.8', 0))
-serverIp = s.getsockname()[0]
+while True:
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 0))
+        serverIp = s.getsockname()[0]
+    except OSError as e:
+        if e.errno == 101:
+            print("Waiting for network to come up...")
+            time.sleep(1)
+        else:
+            raise
+    else:
+        break
+    finally:
+        s.close()
 
 abspath = os.path.abspath(__file__)
 dname = os.path.dirname(abspath)
